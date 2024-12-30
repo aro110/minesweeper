@@ -18,6 +18,8 @@
  *sprawozdanie
  *repo na github
  *program podzielony na moduly
+ *dodaj obsluge flag (nie mozna odkryc pola gdzie flaga i ilosc pozostalych flag)
+ *AKTUALNY WYNIK PO KAZDYM RUCHU POKAZANY
  */
 
 #define AND &&
@@ -33,22 +35,25 @@ struct cell {
     int nearMineCount; // ile min w poblizu pola
 };
 
-void placeFlag(struct cell **board, int x, int y) {
+void placeFlag(struct cell **board, int x, int y, int *remainingFlags) {
     if (board[x][y].status == 0) {
         board[x][y].status = 2;
+        *remainingFlags-=1;
     }
     else if (board[x][y].status == 2) {
         board[x][y].status = 0;
+        *remainingFlags+=1;
     }
 }
 
-void revealCell (struct cell **board, int x, int y, int rows, int cols) {
+void revealCell (struct cell **board, int x, int y, int rows, int cols, int multiplaier, int *score) {
     if (x<0 OR y<0 OR x>=rows OR y>=cols OR board[x][y].status == 1 OR board[x][y].status == 2) return;
 
     board[x][y].status = 1;
+    *score += multiplaier;
 
     if (board[x][y].isMine) {
-        printf("Koniec gry, mina!\n");
+        printf("Koniec gry, mina!\nTwój końcowy wynik to: %d\n", score);
         for (int i = 0; i < rows; i++) {
             free(board[i]);
         }
@@ -60,7 +65,7 @@ void revealCell (struct cell **board, int x, int y, int rows, int cols) {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
                 if (dx NOT 0 OR dy NOT 0) {
-                    revealCell(board, x+dx, y+dy, rows, cols);
+                    revealCell(board, x+dx, y+dy, rows, cols, multiplaier, score);
                 }
             }
         }
@@ -111,7 +116,7 @@ void printBoard(struct cell **board, int rows, int cols) {
     // naglowki kolumn
     printf("    ");
     for (int i = 0; i < cols; i++) {
-        printf(" %2d ", i+1);
+        printf("%2d  ", i+1);
     }
     printf("\n");
 
@@ -130,12 +135,13 @@ void printBoard(struct cell **board, int rows, int cols) {
                 if (board[x][y].isMine) {
                     printf(" * |");
                 } else {
-                    printf(" %d |", board[x][y].nearMineCount);
+                    if (board[x][y].nearMineCount == 0) continue;
+                    else printf(" %d |", board[x][y].nearMineCount);
                 }
             } else if (board[x][y].status == 2) { // flaga
                 printf(" P |");
             } else { // Pole zakryte
-                printf("   |");
+                printf(" █ |");
             }
         }
         printf("\n");
@@ -162,7 +168,7 @@ void initBoard(struct cell **board, int rows, int cols) {
 
 int diffLevel() {
     int diff;
-    printf("Wybierz poziom trudnosci:\n1. Latwy\n2. Sredni\n3. Trudny");
+    printf("Wybierz poziom trudnosci:\n1. Latwy\n2. Sredni\n3. Trudny\n4. Wlasna plansza");
     scanf("%d", &diff);
     if (diff == 1) {
         return 1;
@@ -170,6 +176,8 @@ int diffLevel() {
         return 2;
     } else if (diff == 3) {
         return 3;
+    } else if (diff == 4) {
+        return 4;
     } else {
         printf("Blad wprowadzania danych");
         PAUSE;
@@ -185,25 +193,37 @@ int checkWin(struct cell **board, int rows, int cols) {
     return 1;
 }
 
+void fileExample() {
+    printf("9 9 1\n"
+"0 0 1 0 0 0 0 0 0\n"
+"0 0 0 0 0 0 0 0 0\n"
+"0 0 0 0 0 0 0 0 0\n"
+"0 0 0 0 0 0 0 0 0\n"
+"0 0 0 0 0 0 0 0 0\n"
+"0 0 0 0 0 0 0 0 0\n"
+"0 0 0 0 0 0 0 0 0\n"
+"0 0 0 0 0 0 0 0 0\n"
+"0 0 0 0 0 0 0 0 0\n"
+"r 1 1\n"
+"r 2 2\n"
+"r 5 5\n"
+"f 1 3\n");
+}
+
 void instruction() {
-    printf("instrukcja");
+    printf("\n\nWybierz poziom trudnosci, badz wprowadz swoje wymiary planszy i liczbe min, aby rozpoczac gre!\n"
+           "Komendy, potrzebne do gry:\n"
+           "r x y - odslania pole, gdzie x to numer rzedu, a y to numer kolumny,\n"
+           "f x y - stawia flage, gdzie x to numer rzedu, a y to numer kolumny (aby usunac flage wpisz tez te komende ze wspolrzednymi flagi).\n"
+           "Uruchom program z parametrem -f i podaj sciezke do pliku, ktory zawiera gotowa plansze i komendy, aby sprawdzic\npoprawnosc liczby ruchow, ilosc zdobytych punktowo oraz czy wygrales!\n"
+           "W pliku na poczatku podaj 3 liczby, ktore znacza kolejno liczbe rzedow i kolumn planszy oraz liczbe min,\nktora ustawilesw planszy.\n"
+           "Ponizej umiesc plansze o tych wymiarach ktore podales i oznacz pola liczbami 0 - brak miny; 1 - mina.\n"
+           "Nastepnie, za kazdym razem od nowej linii podaj komende, ktora uzyles.\n"
+           "Przykladowy plik w poprawnej formie znajdziesz w menu glownym.\n"
+           "Gra sie konczy w momencie trafienia na mine, badz oznaczenia flaga kazdej miny na planszy.\n\n");
 }
 
-int countScore(struct cell **board, int rows, int cols, int diff) {
-    int count = 0;
-    int score = 0;
-    for (int x = 0; x < rows; x++) {
-        for (int y = 0; y<cols; y++) {
-            if (board[x][y].status == 1) {
-                count++;
-            }
-        }
-    }
-    score = count * diff;
-    return score;
-}
-
-void writeScore(int score) {
+void writeScore(int *score) {
     const char *filename = "C:/Users/Arkadiusz/CLionProjects/minesweeper/score.txt";
     FILE *f = fopen(filename, "r");
 
@@ -231,7 +251,7 @@ void writeScore(int score) {
     scanf("%99s", nick); // ograniczenie do 99 znakow
 
     // dodaj nowego gracza do tablicy na ostatnie miejsce
-    if (count < 5 || players[count - 1].score < score) {
+    if (count < 5 || players[count - 1].score < *score) {
         if (count < 5) {
             count++;
         }
@@ -280,11 +300,14 @@ int processFile(const char *filepath, int *score, int *moves, int *gameResult) {
     int rows, cols, numMines;
     fscanf(file, "%d %d %d", &rows, &cols, &numMines);
 
+    int remainingFlags = numMines;
+
     struct cell **board = malloc(sizeof(struct cell *) * rows);
     for (int i = 0; i < rows; i++) {
         board[i] = malloc(sizeof(struct cell) * cols);
     }
 
+    // inicjalizacja planszy
     initBoard(board, rows, cols);
 
     // Odczyt planszy
@@ -295,26 +318,11 @@ int processFile(const char *filepath, int *score, int *moves, int *gameResult) {
     }
 
     // Oblicz pola wokol min
-    for (int x = 0; x < rows; x++) {
-        for (int y = 0; y < cols; y++) {
-            if (board[x][y].isMine) continue;
-
-            int count = 0;
-            for (int dx = -1; dx <= 1; dx++) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    int nx = x + dx;
-                    int ny = y + dy;
-                    if (nx >= 0 AND ny >= 0 AND nx < rows AND ny < cols AND board[nx][ny].isMine) count++;
-                }
-            }
-            board[x][y].nearMineCount = count;
-        }
-    }
+    nearMines(board, rows, cols);
 
     char command;
     int x, y;
     *moves = 0;
-    *score = 0;
     *gameResult = 1; // Domyślnie sukces
 
     while (fscanf(file, " %c %d %d", &command, &x, &y) == 3) {
@@ -329,29 +337,16 @@ int processFile(const char *filepath, int *score, int *moves, int *gameResult) {
             }
 
             if (board[x][y].status == 0) {
-                board[x][y].status = 1;
-                (*score) += 1;
-
-                if (board[x][y].nearMineCount == 0) {
-                    for (int dx = -1; dx <= 1; dx++) {
-                        for (int dy = -1; dy <= 1; dy++) {
-                            int nx = x + dx;
-                            int ny = y + dy;
-                            if (nx >= 0 AND ny >= 0 AND nx < rows AND ny < cols AND board[nx][ny].status == 0) {
-                                board[nx][ny].status = 1;
-                                (*score) += 1;
-                            }
-                        }
-                    }
-                }
+                revealCell(board, x, y, rows, cols, 1, &score);
             }
         } else if (command == 'f') {
-            if (board[x][y].status == 0) {
-                board[x][y].status = 2; // Ustaw flagę
-            } else if (board[x][y].status == 2) {
-                board[x][y].status = 0; // Usuń flagę
-            }
+            placeFlag(board, x, y, &remainingFlags);
         }
+    }
+
+    if (*gameResult == 1 && !checkWin(board, rows, cols)) {
+        printf("Plik jest niekompletny - gra nie zostala rozwiazana.\n");
+        exit(1);
     }
 
     fclose(file);
@@ -374,7 +369,7 @@ void handleFileInput(int argc, char *argv[]) {
                 filepath = optarg;
                 break;
             default:
-                fprintf(stderr, "Uzyj: %s -f <filepath>\n", argv[0]);
+                fprintf(stderr, "Usage: %s -f <filepath>\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
@@ -384,7 +379,7 @@ void handleFileInput(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    int score, moves, gameResult;
+    int moves, gameResult, score;
     if (processFile(filepath, &score, &moves, &gameResult) == 0) {
         printf("Liczba poprawnych ruchow: %d\n", moves);
         printf("Liczba punktow: %d\n", score);
@@ -396,29 +391,43 @@ void minesweeper() {
     int userInputX;
     int userInputY;
     int firstInput = 1;
-    int rows;
-    int cols;
+    int rows, cols;
     char command;
     int numMin;
-
+    int remainingFlags;
+    int score = 0;
 
     int diff = diffLevel(); // 1 latwy, 2 sredni, 3 trudny
     switch (diff) {
         case 1:
             rows = 9;
             cols = 9;
-            numMin = 1;
+            numMin = 10;
+            remainingFlags = numMin;
             break;
         case 2:
             rows = 16;
             cols = 16;
             numMin = 40;
+            remainingFlags = numMin;
             break;
         case 3:
             rows = 16;
             cols = 30;
-            numMin = 1;
+            numMin = 99;
+            remainingFlags = numMin;
             break;
+        case 4:
+            printf("Podaj liczbe rzedow: ");
+            scanf(" %d", &rows);
+            printf("Podaj liczbe kolumn: ");
+            scanf(" %d", &cols);
+            int area = cols * rows;
+            do {
+                printf("Podaj liczbe min: ");
+                scanf(" %d", &numMin);
+            } while (area <= numMin);
+            remainingFlags = numMin;
     }
 
     struct cell **board = malloc(sizeof(struct cell *) * rows);
@@ -435,8 +444,10 @@ void minesweeper() {
     }
 
     initBoard(board, rows, cols); // inicjalizowanie planszy tzn ustawienie wszystkich wartosci pol na 0
+
     while (1) {
         printBoard(board, rows, cols); // wypisanie planszy
+        printf("\nAktualny wynik: %d\nIlosc pozostalych flag: %d\n", score, remainingFlags);
 
         // wprowadzanie komend
         printf("Wprowadz wspolrzedne do odsloniecia (r/f x y): ");
@@ -457,18 +468,18 @@ void minesweeper() {
         }
 
         if (command == 'r') {
-            revealCell(board,x, y, rows, cols);
+            revealCell(board,x, y, rows, cols, diff, &score);
         } else if (command == 'f') {
-            placeFlag(board, x, y);
+            if (remainingFlags > 0) placeFlag(board, x, y, &remainingFlags);
+            else printf("Uzyto wszystkie flagi, zdejmij jakas z planszy, aby postawic nowa.\n");
         } else {
             printf("Blad wprowadzania danych\n");
         }
 
         // sprawdzenie wygranej
         if (checkWin(board, rows, cols)) {
-            int score = countScore(board, rows, cols, diff);
-            printf("Koniec gry, wygrales!\nTwoj wynik koncowy to: %d", score);
-            writeScore(score);
+            printf("Koniec gry, wygrales!\nTwoj wynik koncowy to: %d\n", score);
+            writeScore(&score);
             for (int i = 0; i < rows; i++) {
                 free(board[i]);
             }
@@ -483,17 +494,20 @@ int main(int argc, char *argv[]) {
 
     if (argc > 1) {
         handleFileInput(argc, argv);
+        exit(1);
     }
 
     int choice;
 
     do {
-        printf("Witaj w grze Saper!\nWpisz liczbe, aby przejsc dalej:\n1. Zagraj.\n2. Pokaz instrukcje.");
+        printf("ąąąąWitaj w grze Saper!\nWpisz liczbe, aby przejsc dalej:\n1. Zagraj.\n2. Pokaz instrukcje.\n3. Przykladowy plik.");
         scanf("%d", &choice);
         if (choice == 1) {
             minesweeper();
         } else if (choice == 2) {
             instruction();
+        } else if (choice == 3) {
+            fileExample();
         } else {
             printf("Blad wprowadzania danych.\n");
         }
