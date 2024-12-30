@@ -1,0 +1,11 @@
+#ifndef INSTRUCTION_H
+#define INSTRUCTION_H
+#include "gameWithFile.h"
+#include "cell.h"
+#include "instruction.h"
+#include "score.h"
+#include "initGame.h"
+#include "printBoard.h"
+void fileExample();
+void instruction();
+#endif //INSTRUCTION_H
