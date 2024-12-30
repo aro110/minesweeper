@@ -12,7 +12,7 @@
 #define NOT !=
 
 void writeScore(int *score) {
-    const char *filename = "C:/Users/Arkadiusz/CLionProjects/minesweeper/score.txt";
+    const char *filename = "score.txt";
     FILE *f = fopen(filename, "r");
 
     // gracz

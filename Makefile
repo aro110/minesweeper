@@ -23,10 +23,20 @@ run: $(TARGET)
 
 test: $(TARGET)
 	./$(TARGET) -f game.txt
+
+test2: $(TARGET)
 	./$(TARGET) -f gameLose.txt
+
+test3: $(TARGET)
 	./$(TARGET) -f game-error.txt
+
+test4: $(TARGET)
 	./$(TARGET) -f game-error2.txt
+
+test5: $(TARGET)
 	./$(TARGET) -f game-error3.txt
+
+test6: $(TARGET)	
 	./$(TARGET) -f game-error4.txt
 
 .PHONY: all clean run test
