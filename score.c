@@ -5,12 +5,14 @@
 #include "initGame.h"
 #include "printBoard.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define AND &&
 #define OR ||
 #define NOT !=
 
+// zapisywanie wynikow do pliku
 void writeScore(int *score) {
     const char *filename = "score.txt";
     FILE *f = fopen(filename, "r");
@@ -21,34 +23,52 @@ void writeScore(int *score) {
         int score;
     } Player;
 
-    Player players[5];
-    int count = 0; // liczba graczy w rankingu
+    Player *players = NULL; // wskaźnik na tablicę graczy
+    int count = 0;          // liczba graczy w rankingu
+    int capacity = 0;       // maksymalna pojemność tablicy
 
     if (f != NULL) {
-        while (fscanf(f, "%*d. %99[^,], wynik: %d", players[count].nick, &players[count].score) == 2) {
+        char tempNick[100];
+        int tempScore;
+
+        while (fscanf(f, "%*d. %99[^,], wynik: %d", tempNick, &tempScore) == 2) {
+            if (count == capacity) {
+                capacity = (capacity == 0) ? 10 : capacity * 2;
+                players = realloc(players, capacity * sizeof(Player));
+                if (players == NULL) {
+                    printf("Blad alokacji pamieci.\n");
+                    fclose(f);
+                    return;
+                }
+            }
+            strncpy(players[count].nick, tempNick, sizeof(players[count].nick) - 1);
+            players[count].nick[sizeof(players[count].nick) - 1] = '\0';
+            players[count].score = tempScore;
             count++;
-            if (count == 5) break;
         }
         fclose(f);
     } else {
-        printf("Blad wczytania pliku\n");
+        printf("Blad wczytania pliku.\n");
     }
 
     char nick[100];
     printf("\nPodaj swoja nazwe: ");
     scanf("%99s", nick); // ograniczenie do 99 znakow
 
-    // dodaj nowego gracza do tablicy na ostatnie miejsce
-    if (count < 5 || players[count - 1].score < *score) {
-        if (count < 5) {
-            count++;
+    if (count == capacity) {
+        capacity = (capacity == 0) ? 10 : capacity * 2;
+        players = realloc(players, capacity * sizeof(Player));
+        if (players == NULL) {
+            printf("Blad alokacji pamieci.\n");
+            return;
         }
-        players[count - 1].score = *score;
-        strncpy(players[count - 1].nick, nick, sizeof(players[count - 1].nick) - 1); // kopiowanie nazwy do 99 znakow, tak aby ostatni byl NULL
-        players[count - 1].nick[sizeof(players[count - 1].nick) - 1] = '\0';
-    } else {
-        printf("Nie dostales sie do najlepszej piatki. Sprobuj nastepnym razem!\n");
     }
+
+    // dodaj nowego gracza do tablicy
+    strncpy(players[count].nick, nick, sizeof(players[count].nick) - 1);
+    players[count].nick[sizeof(players[count].nick) - 1] = '\0';
+    players[count].score = *score;
+    count++;
 
     // sortowanie malejaco wedlug wyniku
     for (int i = 0; i < count - 1; i++) {
@@ -63,23 +83,28 @@ void writeScore(int *score) {
 
     f = fopen(filename, "w");
     if (f == NULL) {
-        printf("Nie mozna otworzyc pliku do zapisu\n");
+        printf("Nie mozna otworzyc pliku do zapisu.\n");
+        free(players);
         return;
     }
 
+    // zapis wszystkich graczy do pliku
     for (int i = 0; i < count; i++) {
         fprintf(f, "%d. %s, wynik: %d\n", i + 1, players[i].nick, players[i].score);
     }
 
     fclose(f);
 
-    // ranking
-    printf("\nAktualny ranking:\n");
-    for (int i = 0; i < count; i++) {
+    // wyświetlenie 5 najlepszych graczy
+    printf("\nAktualny ranking (top 5):\n");
+    for (int i = 0; i < (count < 5 ? count : 5); i++) { // pokazuje tylko 5 najlepszych
         printf("%d. %s, wynik: %d\n", i + 1, players[i].nick, players[i].score);
     }
+
+    free(players);
 }
 
+// ustawienie poziomu trudnosci
 int diffLevel() {
     int diff;
     printf("Wybierz poziom trudnosci:\n1. Latwy\n2. Sredni\n3. Trudny\n4. Wlasna plansza");
@@ -97,11 +122,16 @@ int diffLevel() {
     }
 }
 
+// sprawdzanie wygranej
 int checkWin(struct cell **board, int rows, int cols) {
     for (int x = 0; x < rows; x++) {
         for (int y = 0; y < cols; y++) {
+            // Sprawdza, czy wszystkie miny są oznaczone flagami
             if (board[x][y].isMine AND board[x][y].status NOT 2) return 0;
+            // Sprawdza, czy wszystkie pola bez min są odkryte
+            if (!board[x][y].isMine AND board[x][y].status NOT 1) return 0;
         }
     }
-    return 1;
+    return 1; // Wszystkie warunki wygranej spełnione
 }
+

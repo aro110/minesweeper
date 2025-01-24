@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include "gameWithFile.h"
 #include "cell.h"
-#include "score.h"
 #include "initGame.h"
 
 int processFile(const char *filepath, int *score, int *moves, int *gameResult) {
@@ -123,20 +122,30 @@ int processFile(const char *filepath, int *score, int *moves, int *gameResult) {
 void handleFileInput(int argc, char *argv[]) {
     int opt;
     char *filepath = NULL;
+    int runTestsFlag = 0;
 
-    while ((opt = getopt(argc, argv, "f:")) != -1) {
+    while ((opt = getopt(argc, argv, "f:t")) != -1) {
         switch (opt) {
             case 'f':
                 filepath = optarg;
-                break;
+            break;
+            case 't':
+                runTestsFlag = 1;
+            break;
             default:
-                fprintf(stderr, "Usage: %s -f <filepath>\n", argv[0]);
-                exit(EXIT_FAILURE);
+                fprintf(stderr, "Poprawne uzycie: %s -f <sciezka> lub %s -t\n", argv[0], argv[0]);
+            exit(EXIT_FAILURE);
         }
     }
 
+    if (runTestsFlag) {
+        printf("Uruchamianie testow...\n");
+        runTests();
+        exit(EXIT_SUCCESS);
+    }
+
     if (filepath == NULL) {
-        fprintf(stderr, "Musisz podac sciezke do pliku za pomoca opcji -f\n");
+        fprintf(stderr, "Musisz podac sciezke do pliku za pomoca opcji -f lub uzyc -t do uruchomienia testow\n");
         exit(EXIT_FAILURE);
     }
 

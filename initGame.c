@@ -1,6 +1,4 @@
-#include "gameWithFile.h"
 #include "cell.h"
-#include "instruction.h"
 #include "score.h"
 #include "initGame.h"
 #include "printBoard.h"
@@ -27,7 +25,7 @@ void placeMines(struct cell **board, int rows, int cols, int numMin, int safeX, 
         if (board[x][y].isMine == 0) {
             board[x][y].isMine = 1;
             count++;
-            printf("Mina na: %d %d\n", x, y);
+            // printf("Mina na: %d %d\n", x, y);
         }
     }
 }
@@ -81,6 +79,7 @@ void nearMines(struct cell **board, int rows, int cols) {
                     if (nx >= 0 AND ny >= 0 AND nx < rows AND ny < cols AND board[nx][ny].isMine) count++;
                 }
             }
+
             board[x][y].nearMineCount = count;
         }
     }

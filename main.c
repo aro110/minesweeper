@@ -34,6 +34,168 @@
 #define PAUSE system("pause")
 #define CLEAR system("cls")
 
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "initGame.h"
+#include "printBoard.h"
+#include "gameWithFile.h"
+#include "cell.h"
+
+void testDiffLevel() {
+    int diff = diffLevel();
+    assert(diff == 1 || diff == 2 || diff == 3 || diff == 4);
+    printf("Test wyboru poziomu trudnosci zakonczony sukcesem\n");
+}
+
+void testInitBoard() {
+    int rows = 5, cols = 5;
+    struct cell **board = malloc(rows * sizeof(struct cell *));
+    for (int i = 0; i < rows; i++) {
+        board[i] = malloc(cols * sizeof(struct cell));
+    }
+
+    initBoard(board, rows, cols);
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            assert(board[i][j].isMine == 0);
+            assert(board[i][j].status == 0);
+            assert(board[i][j].nearMineCount == 0);
+        }
+    }
+
+    for (int i = 0; i < rows; i++) {
+        free(board[i]);
+    }
+    free(board);
+
+    printf("Test inicjalizacji planszy zakonczony sukcesem\n");
+}
+
+void testPlaceMines() {
+    int rows = 5, cols = 5, numMines = 3;
+    struct cell **board = malloc(rows * sizeof(struct cell *));
+    for (int i = 0; i < rows; i++) {
+        board[i] = malloc(cols * sizeof(struct cell));
+    }
+    initBoard(board, rows, cols);
+
+    placeMines(board, rows, cols, numMines, 2, 2);
+
+    int mineCount = 0;
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            if (board[i][j].isMine) mineCount++;
+        }
+    }
+
+    assert(mineCount == numMines);
+
+    for (int i = 0; i < rows; i++) {
+        free(board[i]);
+    }
+    free(board);
+
+    printf("Test rozmieszczania min zakonczony sukcesem\n");
+}
+
+void testNearMines() {
+    int rows = 5, cols = 5;
+    struct cell **board = malloc(rows * sizeof(struct cell *));
+    for (int i = 0; i < rows; i++) {
+        board[i] = malloc(cols * sizeof(struct cell));
+    }
+    initBoard(board, rows, cols);
+
+    placeMines(board, rows, cols, 3, 2, 2);
+    nearMines(board, rows, cols);
+
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            if (board[i][j].isMine == 0) {
+                int count = 0;
+                for (int dx = -1; dx <= 1; dx++) {
+                    for (int dy = -1; dy <= 1; dy++) {
+                        int nx = i + dx;
+                        int ny = j + dy;
+                        if (nx >= 0 && ny >= 0 && nx < rows && ny < cols && board[nx][ny].isMine) {
+                            count++;
+                        }
+                    }
+                }
+                assert(board[i][j].nearMineCount == count);
+            }
+        }
+    }
+
+    for (int i = 0; i < rows; i++) {
+        free(board[i]);
+    }
+    free(board);
+
+    printf("Test obliczania sasiedztwa min zakonczony sukcesem\n");
+}
+
+void testCheckWin() {
+    int rows = 5, cols = 5;
+    struct cell **board = malloc(rows * sizeof(struct cell *));
+    for (int i = 0; i < rows; i++) {
+        board[i] = malloc(cols * sizeof(struct cell));
+    }
+    initBoard(board, rows, cols);
+
+    placeMines(board, rows, cols, 3, 2, 2);
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            board[i][j].status = board[i][j].isMine ? 2 : 1;
+        }
+    }
+
+    assert(checkWin(board, rows, cols) == 1);
+
+    for (int i = 0; i < rows; i++) {
+        free(board[i]);
+    }
+    free(board);
+
+    printf("Test sprawdzania wygranej zakonczony sukcesem\n");
+}
+
+void testInvalidArguments() {
+    int rows = 5, cols = 5;
+    struct cell **board = malloc(rows * sizeof(struct cell *));
+    for (int i = 0; i < rows; i++) {
+        board[i] = malloc(cols * sizeof(struct cell));
+    }
+    initBoard(board, rows, cols);
+
+    printf("Test blednych argumentow\n");
+    // Testowanie blednych wspolrzednych dla revealCell
+    revealCell(board, -1, -1, rows, cols, 1, NULL);
+    printf("RevealCell z nieprawidlowymi wspolrzednymi nie powoduje crashu\n");
+
+    for (int i = 0; i < rows; i++) {
+        free(board[i]);
+    }
+    free(board);
+
+    printf("Test blednych argumentow zakonczony sukcesem\n");
+}
+
+void runTests() {
+    testDiffLevel();
+    testInitBoard();
+    testPlaceMines();
+    testNearMines();
+    testCheckWin();
+    testInvalidArguments();
+
+    printf("\n=== WSZYSTKIE TESTY ZAKONCZONE SUKCESEM ===\n");
+}
+
+
+// zwolnienie pamieci
 void freeBoard(struct cell **board, int rows) {
     for (int i = 0; i < rows; i++) {
         free(board[i]);
@@ -42,15 +204,10 @@ void freeBoard(struct cell **board, int rows) {
 }
 
 void minesweeper() {
-    int userInputX;
-    int userInputY;
-    int firstInput = 1;
-    int rows, cols;
+    int userInputX, userInputY, firstInput = 1, rows, cols, numMin, remainingFlags, score = 0;
     char command;
-    int numMin;
-    int remainingFlags;
-    int score = 0;
 
+    // poziom trudnosci
     int diff = diffLevel(); // 1 latwy, 2 sredni, 3 trudny
     switch (diff) {
         case 1:
@@ -73,15 +230,32 @@ void minesweeper() {
             break;
         case 4:
             printf("Podaj liczbe rzedow: ");
-            scanf(" %d", &rows);
+            while (scanf(" %d", &rows) != 1 || rows <= 0) {
+                printf("Blad: Podaj poprawna liczbe rzedow (liczba calkowita dodatnia): ");
+                while (getchar() != '\n'); // Czyszczenie bufora wejściowego
+            }
+
             printf("Podaj liczbe kolumn: ");
-            scanf(" %d", &cols);
+            while (scanf(" %d", &cols) != 1 || cols <= 0) {
+                printf("Blad: Podaj poprawna liczbe kolumn (liczba calkowita dodatnia): ");
+                while (getchar() != '\n'); // Czyszczenie bufora wejściowego
+            }
+
             int area = cols * rows;
             do {
                 printf("Podaj liczbe min: ");
-                scanf(" %d", &numMin);
-            } while (area <= numMin);
+                if (scanf(" %d", &numMin) != 1 || numMin <= 0) {
+                    printf("Blad: Podaj poprawna liczbe min (liczba calkowita dodatnia):\n");
+                    while (getchar() != '\n'); // Czyszczenie bufora wejściowego
+                    continue;
+                }
+                if (numMin > (area - 3)) {
+                    printf("Liczba min jest zbyt duza. Maksymalna liczba min: %d\n", area - 3);
+                }
+            } while (numMin > (area - 3) || numMin <= 0);
+
             remainingFlags = numMin;
+            break;
     }
 
     struct cell **board = malloc(sizeof(struct cell *) * rows);
@@ -126,12 +300,13 @@ void minesweeper() {
             firstInput = 0;
         }
 
-        if (command == 'r') {
+        // dzialanie komend
+        if (command == 'r') { // odkrycie
             revealCell(board,x, y, rows, cols, diff, &score);
-        } else if (command == 'f') {
+        } else if (command == 'f') { // flaga
             if (remainingFlags > 0) placeFlag(board, x, y, &remainingFlags);
             else printf("Uzyto wszystkie flagi, zdejmij jakas z planszy, aby postawic nowa.\n");
-        } else {
+        } else { // blad
             printf("Blad wprowadzania danych\n");
         }
 
@@ -156,7 +331,7 @@ int main(int argc, char *argv[]) {
     int choice;
 
     do {
-        printf("ąąąąWitaj w grze Saper!\nWpisz liczbe, aby przejsc dalej:\n1. Zagraj.\n2. Pokaz instrukcje.\n3. Przykladowy plik.");
+        printf("Witaj w grze Saper!\nWpisz liczbe, aby przejsc dalej:\n1. Zagraj.\n2. Pokaz instrukcje.\n3. Przykladowy plik.");
         scanf("%d", &choice);
         if (choice == 1) {
             minesweeper();

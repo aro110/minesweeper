@@ -19,14 +19,27 @@ void fileExample() {
 }
 
 void instruction() {
-    printf("\n\nWybierz poziom trudnosci, badz wprowadz swoje wymiary planszy i liczbe min, aby rozpoczac gre!\n"
-           "Komendy, potrzebne do gry:\n"
-           "r x y - odslania pole, gdzie x to numer rzedu, a y to numer kolumny,\n"
-           "f x y - stawia flage, gdzie x to numer rzedu, a y to numer kolumny (aby usunac flage wpisz tez te komende ze wspolrzednymi flagi).\n"
-           "Uruchom program z parametrem -f i podaj sciezke do pliku, ktory zawiera gotowa plansze i komendy, aby sprawdzic\npoprawnosc liczby ruchow, ilosc zdobytych punktowo oraz czy wygrales!\n"
-           "W pliku na poczatku podaj 3 liczby, ktore znacza kolejno liczbe rzedow i kolumn planszy oraz liczbe min,\nktora ustawilesw planszy.\n"
-           "Ponizej umiesc plansze o tych wymiarach ktore podales i oznacz pola liczbami 0 - brak miny; 1 - mina.\n"
-           "Nastepnie, za kazdym razem od nowej linii podaj komende, ktora uzyles.\n"
-           "Przykladowy plik w poprawnej formie znajdziesz w menu glownym.\n"
-           "Gra sie konczy w momencie trafienia na mine, badz oznaczenia flaga kazdej miny na planszy.\n\n");
+    printf("\n\n=================== INSTRUKCJA ===================\n"
+           "Wybierz poziom trudnosci lub wprowadz wlasne wymiary planszy i liczbe min, aby rozpoczac gre.\n"
+           "\nDostepne komendy:\n"
+           "  r x y  - odslania pole, gdzie x to numer rzedu, a y to numer kolumny.\n"
+           "  f x y  - stawia flage, gdzie x to numer rzedu, a y to numer kolumny.\n"
+           "           (Aby usunac flage, wpisz ponownie te sama komende dla tego pola.)\n"
+           "\nUruchom program z parametrem -f i podaj sciezke do pliku, ktory zawiera:\n"
+           "  1. Liczbe rzedow, kolumn i min (pierwsza linia).\n"
+           "  2. Plansze oznaczona wartosciami:\n"
+           "     0 - brak miny,\n"
+           "     1 - mina.\n"
+           "  3. Kolejne komendy w nowej linii.\n"
+           "\nPrzykladowy format pliku (aby zobaczyc pelen plik, wpisz 3 w menu glownym):\n"
+           "  9 9 10\n"
+           "  0 0 1 0 0 0 0 0 0\n"
+           "  0 0 0 0 0 0 0 0 0\n"
+           "  ...\n"
+           "  r 1 1\n"
+           "  f 2 2\n"
+           "\nZasady zakonczenia gry:\n"
+           "  - Przegrasz, jesli odslonisz pole z mina.\n"
+           "  - Wygrasz, jesli oznaczysz wszystkie miny flagami i odslonisz pozostale pola.\n"
+           "\n=================================================\n\n");
 }

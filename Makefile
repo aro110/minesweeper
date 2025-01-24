@@ -39,4 +39,7 @@ test5: $(TARGET)
 test6: $(TARGET)	
 	./$(TARGET) -f game-error4.txt
 
+testf: $(TARGET)
+	./$(TARGET) -t
+
 .PHONY: all clean run test
